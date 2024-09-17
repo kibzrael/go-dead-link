@@ -10,6 +10,7 @@ import (
 
 
 func ParseHTML(body io.Reader, props Props){
+	page := props.url
 	tokenizer := html.NewTokenizer(body)
 	for {
 		tokenType := tokenizer.Next()
@@ -27,7 +28,7 @@ func ParseHTML(body io.Reader, props Props){
 						scraped := Contains(props.scraped, link)
 						if !scraped{
 							props.url = link
-							FetchLink(props)
+							FetchLink(page, props)
 						} else{
 							fmt.Println("Already Checked: Skipping...")
 						}

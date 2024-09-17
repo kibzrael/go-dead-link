@@ -4,20 +4,26 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"text/tabwriter"
 )
+
+type Link struct{
+	page string
+	url string
+}
 
 type Props struct{
 	client *http.Client
 	host string
 	url string
 	scraped *[]string
-	broken *[]string
+	broken *[]Link
 }
 
 func Scraper(url string){
 	client := http.Client{}
 	scraped := []string{}
-	broken := []string{}
+	broken := []Link{}
 
 	res, err := client.Get(url)
 	if err != nil{
@@ -32,12 +38,17 @@ func Scraper(url string){
 		scraped: &scraped,
 		broken: &broken,
 	}
-	FetchLink(props)
+	FetchLink(url, props)
 
 	const colorRed = "\033[0;31m"
 	const colorNone = "\033[0m"
-    fmt.Fprintf(os.Stdout, "\n%s BROKEN LINKS:\n", colorRed)
+    fmt.Print("\nBROKEN LINKS:\n\n")
+
+	writer := tabwriter.NewWriter(os.Stdout, 1, 1, 4, ' ', 0)
+	defer writer.Flush()
+	fmt.Fprintf(writer, "%s   %s\t%s %s\n", colorNone, "Page", colorRed, "Link")
 	for _, link := range broken{
-		fmt.Fprintf(os.Stdout, "%s   %s\n%s\n", colorRed, link, colorNone)
+		fmt.Fprintf(writer, "%s   %s\t%s %s\n", colorNone, link.page, colorRed, link.url)
 	}
+	fmt.Fprintf(writer, "\n%s", colorNone)
 }
