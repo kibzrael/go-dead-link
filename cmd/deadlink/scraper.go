@@ -3,8 +3,7 @@ package deadlink
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"text/tabwriter"
+	"time"
 )
 
 type Link struct{
@@ -16,14 +15,19 @@ type Props struct{
 	client *http.Client
 	host string
 	url string
+	found *[]string
 	scraped *[]string
-	broken *[]Link
+	scrapedChannel chan string
+	broken chan Link
 }
 
 func Scraper(url string){
 	client := http.Client{}
+	found := []string{url}
 	scraped := []string{}
 	broken := []Link{}
+	scrapedChannel := make(chan string)
+	brokenChannel := make(chan Link)
 
 	res, err := client.Get(url)
 	if err != nil{
@@ -35,20 +39,27 @@ func Scraper(url string){
 		client: &client,
 		host:  baseHost,
 		url: url,
+		found: &found,
 		scraped: &scraped,
-		broken: &broken,
+		scrapedChannel: scrapedChannel,
+		broken: brokenChannel,
 	}
-	FetchLink(url, props)
+	go FetchLink(url, props)
 
-	const colorRed = "\033[0;31m"
-	const colorNone = "\033[0m"
-    fmt.Print("\nBROKEN LINKS:\n\n")
-
-	writer := tabwriter.NewWriter(os.Stdout, 1, 1, 4, ' ', 0)
-	defer writer.Flush()
-	fmt.Fprintf(writer, "%s   %s\t%s %s\n", colorNone, "Page", colorRed, "Link")
-	for _, link := range broken{
-		fmt.Fprintf(writer, "%s   %s\t%s %s\n", colorNone, link.page, colorRed, link.url)
+	for{
+		select{
+		case link  := <- props.scrapedChannel:
+			scraped = append(scraped, link)
+		case link  := <- props.broken:
+			broken = append(broken, link)
+		case <- time.After(1 * time.Second):
+			if len(found) == len(scraped){
+				defer close(props.broken)
+				defer close(props.scrapedChannel)
+				PrintLinks(&broken)
+				fmt.Println("Broken links:", len(broken))
+				return
+			}
+		}
 	}
-	fmt.Fprintf(writer, "\n%s", colorNone)
 }

@@ -28,7 +28,8 @@ func ParseHTML(body io.Reader, props Props){
 						scraped := Contains(props.scraped, link)
 						if !scraped{
 							props.url = link
-							FetchLink(page, props)
+							*props.found = append(*props.found, link)
+							go FetchLink(page, props)
 						} else{
 							fmt.Println("Already Checked: Skipping...")
 						}
