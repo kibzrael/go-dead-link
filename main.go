@@ -7,19 +7,19 @@ import (
 	"time"
 )
 
-func main(){
+func main() {
 	args := os.Args[1:]
 
-	if len(args) < 1{
+	if len(args) < 1 {
 		fmt.Println("Arguments are required")
-		return;
+		return
 	}
 
 	switch args[0] {
 	case "--url":
-		if len(args) < 2{
+		if len(args) < 2 {
 			fmt.Println("Url argument is required")
-			return;
+			return
 		}
 		url := args[1]
 		start := time.Now()
