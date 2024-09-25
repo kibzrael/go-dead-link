@@ -12,6 +12,7 @@ type Link struct {
 }
 
 type Props struct {
+	mu             *sync.Mutex
 	client         *http.Client
 	host           string
 	url            string
@@ -40,6 +41,7 @@ func Scraper(url string) {
 	baseHost := fmt.Sprintf("%v://%v", res.Request.URL.Scheme, res.Request.Host)
 
 	props := Props{
+		mu:             &sync.Mutex{},
 		client:         &client,
 		host:           baseHost,
 		url:            url,
@@ -60,9 +62,13 @@ func Scraper(url string) {
 	for {
 		select {
 		case link := <-props.scrapedChannel:
+			props.mu.Lock()
 			scraped = append(scraped, link)
+			props.mu.Unlock()
 		case link := <-props.broken:
+			props.mu.Lock()
 			broken = append(broken, link)
+			props.mu.Unlock()
 		case <-success:
 			defer close(props.broken)
 			defer close(props.scrapedChannel)
